@@ -1,0 +1,502 @@
+﻿# Dublar Pro v5
+
+Pipeline completo de processamento de video com IA. Baixa, transcreve, traduz, dubla e corta videos usando modelos locais e na nuvem. Interface web com monitor em tempo real e suporte a GPU via Docker.
+
+**Versao atual: 5.3.1**
+
+---
+
+## Recursos
+
+| Recurso | Script | Descricao | Docs |
+|---------|--------|-----------|------|
+| **Baixar** | `baixar_v1.py` | Download de videos do YouTube, TikTok, Instagram, Facebook e +1000 sites | [docs/baixar.md](docs/baixar.md) |
+| **Dublar** | `dublar_pro_v5.py` | Traduz e dubla videos com IA (10 etapas) | [docs/dublar.md](docs/dublar.md) |
+| **Transcrever** | `transcrever_v1.py` | Gera legendas SRT/TXT/JSON com Whisper ou Parakeet | [docs/transcrever.md](docs/transcrever.md) |
+| **Cortar** | `clipar_v1.py` | Extrai clips por timestamps ou detecta momentos virais com LLM | [docs/cortar.md](docs/cortar.md) |
+
+---
+
+## Arquitetura
+
+```
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                    Frontend (Next.js)                         â”‚
+â”‚                    http://localhost:3000                      â”‚
+â”‚  Dashboard | Dublar | Transcrever | Cortar | Baixar | Jobs   â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                           â”‚ REST + WebSocket
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                   Backend (FastAPI)                           â”‚
+â”‚                   http://localhost:8000                       â”‚
+â”‚  Job Manager | Model Manager | System Monitor | WebSocket    â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                           â”‚ Docker subprocess
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚              Pipelines (montados como volume no Docker)       â”‚
+â”‚  dublar_pro_v5.py | clipar_v1.py | transcrever_v1.py        â”‚
+â”‚  baixar_v1.py                                                â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                           â”‚
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                     Motores de IA                             â”‚
+â”‚  ASR: Whisper large-v3, Parakeet 1.1B                        â”‚
+â”‚  TTS: Edge TTS, Bark, XTTS, Piper                            â”‚
+â”‚  Traducao: M2M100, Ollama (qualquer modelo local)            â”‚
+â”‚  LLM: Ollama, OpenAI, Anthropic, Groq, DeepSeek, OpenRouter  â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+```
+
+---
+
+## Inicio Rapido
+
+### Opcao 1: Script de inicializacao
+
+```bash
+./start.sh
+# API: http://localhost:8000
+# Web: http://localhost:3000
+```
+
+### Opcao 2: Manual
+
+```bash
+# Backend
+pip install fastapi "uvicorn[standard]" websockets httpx python-multipart
+uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload &
+
+# Frontend
+cd web && npm install && npm run dev -- -p 3000 -H 0.0.0.0 &
+```
+
+### Opcao 3: Docker GPU
+
+```bash
+# Build da imagem do pipeline
+docker build -t dublar-pro:gpu .
+
+# Iniciar servicos
+./start.sh
+```
+
+---
+
+## Interface Web
+
+### Dashboard (`/`)
+- Status do sistema: GPU, CPU, RAM, Ollama
+- Cards de acao rapida para cada funcionalidade
+- Tabela de jobs recentes com tipo, status e link para detalhes
+
+### Baixar Video (`/download`) â€” *novo em v5.3.0*
+- Cole o link do video (YouTube, TikTok, Instagram, Facebook, Twitter/X, Twitch, +1000 sites)
+- Escolha a qualidade: Melhor, 1080p, 720p, 480p ou So Audio (MP3)
+- Acompanhe o progresso do download em tempo real
+- Player inline e download direto ao concluir
+
+### Dublar Video (`/new`)
+- URL do YouTube ou upload de arquivo local
+- Idioma de origem (auto-detect) e destino
+- Motor TTS: Edge (online), Bark (GPU), XTTS (clone de voz), Piper (leve)
+- Motor de traducao: M2M100 (offline) ou Ollama (LLM local)
+- Modelo Whisper: tiny, small, medium, large, large-v3
+- Opcoes avancadas: sync mode, diarizacao, stretch maximo, seed
+
+### Transcrever Video (`/transcribe`)
+- URL ou upload de arquivo
+- Motor ASR: Whisper ou Parakeet (NVIDIA)
+- Modelo Whisper configuravel
+- Idioma de origem (auto-detect ou especifico)
+- Download da transcricao em SRT, TXT ou JSON
+
+### Cortar Video (`/cut`)
+- **Modo Manual**: informe timestamps no formato `MM:SS-MM:SS` separados por virgula
+- **Modo Viral (IA)**: LLM analisa a transcricao e identifica os N melhores momentos
+  - Providers: Ollama (local), OpenAI, Anthropic, Groq, DeepSeek, Together, OpenRouter, Custom
+  - Configuravel: numero de clips, duracao minima/maxima, modelo Whisper
+- Download individual ou ZIP com todos os clips
+
+### Lista de Jobs (`/jobs`)
+- Historico completo com tipo (Dublagem/Transcricao/Corte/Download) e status
+- **Filtro por tipo**: Todos / Dublagem / Corte / Transcricao / Download (com contador)
+- **Filtro por status**: Todos / Running / Queued / Completed / Failed (com contador)
+- Barra de progresso inline para jobs em execucao (etapa atual, %, ETA)
+- Tag GPU/CPU por job
+- Info especifica por tipo (idiomas, modo, ASR...)
+- Botao de excluir job direto na lista (sem entrar no detalhe)
+- Link direto para detalhes de cada job
+
+### Detalhe do Job (`/jobs/[id]`)
+- Barra de progresso por etapa com tempo decorrido e estimativas para etapas pendentes
+- Progresso detalhado de ferramentas em tempo real (%, velocidade, ETA dentro da etapa)
+- Titulo e resumo automatico do video (para jobs de Dublagem e Transcricao)
+- Player inline para clips (modo Corte) com lista, timecodes e descricoes geradas por IA
+- Logs expansiveis via WebSocket em tempo real
+- Secao de resultado especifica por tipo de job
+- Acoes: cancelar (job ativo), re-tentar (job falho/cancelado), excluir
+
+---
+
+## Scripts CLI
+
+Cada script tem documentacao detalhada com todos os parametros, exemplos e dicas:
+
+| Script | Documentacao |
+|--------|-------------|
+| `baixar_v1.py` | [docs/baixar.md](docs/baixar.md) â€” qualidades, sites suportados, exemplos |
+| `dublar_pro_v5.py` | [docs/dublar.md](docs/dublar.md) â€” pipeline, TTS, sync, traducao |
+| `transcrever_v1.py` | [docs/transcrever.md](docs/transcrever.md) â€” ASR, formatos de saida, idiomas |
+| `clipar_v1.py` | [docs/cortar.md](docs/cortar.md) â€” modo manual, modo viral, providers LLM |
+
+### Exemplos rapidos
+
+```bash
+# Baixar video
+python baixar_v1.py --url "https://youtube.com/watch?v=ID" --outdir ./download --quality 1080p
+
+# Dublar
+python dublar_pro_v5.py --in "https://youtube.com/watch?v=ID" --tgt pt --tts edge
+
+# Transcrever
+python transcrever_v1.py --in video.mp4 --outdir ./transcription --whisper-model large-v3
+
+# Cortar (manual)
+python clipar_v1.py --in video.mp4 --outdir ./clips --mode manual --timestamps "00:30-02:15, 05:00-07:30"
+
+# Cortar (viral com IA)
+python clipar_v1.py --in video.mp4 --outdir ./clips --mode viral --ollama-model qwen2.5:7b --num-clips 5
+```
+
+---
+
+## API REST
+
+### Sistema
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | `/api/health` | Health check e versao |
+| GET | `/api/system/status` | Status GPU, CPU, RAM, disco, Ollama |
+| GET | `/api/stats` | Estatisticas e ETAs aprendidos |
+
+### Modelos e Ollama
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | `/api/models/options` | Todas opcoes: TTS, vozes, Whisper, idiomas |
+| GET | `/api/models/ollama` | Modelos Ollama disponiveis |
+| POST | `/api/models/ollama/unload` | Descarregar modelo (liberar VRAM) |
+| GET | `/api/ollama/status` | Status do Ollama |
+| POST | `/api/ollama/start` | Iniciar servico Ollama |
+| POST | `/api/ollama/stop` | Parar servico Ollama |
+| POST | `/api/ollama/pull` | Baixar modelo Ollama |
+
+### Jobs â€” Criar
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| POST | `/api/jobs` | Criar job de dublagem |
+| POST | `/api/jobs/upload` | Criar job de dublagem com upload de arquivo |
+| POST | `/api/jobs/download` | Criar job de download de video |
+| POST | `/api/jobs/transcribe` | Criar job de transcricao |
+| POST | `/api/jobs/transcribe/upload` | Criar job de transcricao com upload |
+| POST | `/api/jobs/cut` | Criar job de corte de clips |
+| POST | `/api/jobs/cut/upload` | Criar job de corte com upload |
+
+### Jobs â€” Gerenciar
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | `/api/jobs` | Listar todos os jobs |
+| GET | `/api/jobs/{id}` | Status e progresso do job |
+| GET | `/api/jobs/{id}/logs` | Logs do job |
+| DELETE | `/api/jobs/{id}` | Cancelar job |
+| DELETE | `/api/jobs/{id}?delete=true` | Excluir job e arquivos |
+| POST | `/api/jobs/{id}/retry` | Re-tentar job falho |
+
+### Jobs â€” Resultados
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | `/api/jobs/{id}/download` | Download do video dublado |
+| GET | `/api/jobs/{id}/download-file` | Download do video baixado |
+| GET | `/api/jobs/{id}/subtitles?lang=trad` | Download de legendas SRT |
+| GET | `/api/jobs/{id}/transcript?format=srt` | Transcricao (srt/txt/json) |
+| GET | `/api/jobs/{id}/clips` | Lista de clips gerados |
+| GET | `/api/jobs/{id}/clips/{nome}` | Download de clip individual |
+| GET | `/api/jobs/{id}/clips/zip` | Download de todos os clips em ZIP |
+| GET | `/api/jobs/{id}/transcript-summary` | Titulo e preview da transcricao (gerado on-the-fly) |
+| GET | `/api/jobs/{id}/video-summary` | Titulo e resumo do video dublado |
+
+### WebSocket
+
+| Endpoint | Descricao |
+|----------|-----------|
+| `WS /ws/jobs/{id}` | Progresso em tempo real |
+
+---
+
+## Exemplos via cURL
+
+### Criar job de download
+
+```bash
+curl -X POST http://localhost:8000/api/jobs/download \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.youtube.com/watch?v=VIDEO_ID", "quality": "1080p"}'
+```
+
+### Criar job de dublagem (URL)
+
+```bash
+curl -X POST http://localhost:8000/api/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "https://www.youtube.com/watch?v=VIDEO_ID",
+    "tgt_lang": "pt",
+    "tts_engine": "edge",
+    "translation_engine": "m2m100",
+    "whisper_model": "large-v3",
+    "sync_mode": "smart"
+  }'
+```
+
+### Criar job de transcricao com upload
+
+```bash
+curl -X POST http://localhost:8000/api/jobs/transcribe/upload \
+  -F "file=@video.mp4" \
+  -F 'config_json={"asr_engine":"whisper","whisper_model":"large-v3"}'
+```
+
+### Criar job de corte com timestamps
+
+```bash
+curl -X POST http://localhost:8000/api/jobs/cut \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "https://www.youtube.com/watch?v=VIDEO_ID",
+    "mode": "manual",
+    "timestamps": "00:30-02:15, 05:00-07:30"
+  }'
+```
+
+### Consultar status do job
+
+```bash
+curl http://localhost:8000/api/jobs/JOB_ID
+```
+
+---
+
+## Estrutura de Arquivos por Job
+
+```
+jobs/
+â””â”€â”€ {job_id}/
+    â”œâ”€â”€ config.json          # Configuracao do job
+    â”œâ”€â”€ output.log           # Logs de execucao
+    â”œâ”€â”€ stage_times.json     # Tempo por etapa
+    â”œâ”€â”€ dub_work/
+    â”‚   â””â”€â”€ checkpoint.json  # Progresso (last_step_num)
+    â”‚
+    â”œâ”€â”€ dublado/             # Jobs de dublagem
+    â”‚   â””â”€â”€ video_dublado.mp4
+    â”‚
+    â”œâ”€â”€ transcription/       # Jobs de transcricao
+    â”‚   â”œâ”€â”€ transcript.srt
+    â”‚   â”œâ”€â”€ transcript.txt
+    â”‚   â””â”€â”€ transcript.json
+    â”‚
+    â”œâ”€â”€ clips/               # Jobs de corte
+    â”‚   â”œâ”€â”€ clip_01.mp4
+    â”‚   â”œâ”€â”€ clip_02.mp4
+    â”‚   â””â”€â”€ clips.zip
+    â”‚
+    â””â”€â”€ download/            # Jobs de download
+        â””â”€â”€ video.mp4
+```
+
+---
+
+## Estrutura do Projeto
+
+```
+dublarv5/
+â”œâ”€â”€ dublar_pro_v5.py          # Pipeline de dublagem (10 etapas)
+â”œâ”€â”€ transcrever_v1.py         # Pipeline de transcricao (4 etapas)
+â”œâ”€â”€ clipar_v1.py              # Pipeline de corte de clips
+â”œâ”€â”€ baixar_v1.py              # Download via yt-dlp
+â”œâ”€â”€ requirements.txt          # Dependencias Python do pipeline
+â”œâ”€â”€ Dockerfile                # Container GPU (base: nvidia/pytorch:25.01-py3)
+â”‚
+â”œâ”€â”€ api/                      # Backend FastAPI
+â”‚   â”œâ”€â”€ server.py             # Endpoints REST + WebSocket (versao APP_VERSION)
+â”‚   â”œâ”€â”€ job_manager.py        # Gerenciador de fila e execucao dos jobs
+â”‚   â”œâ”€â”€ model_manager.py      # Opcoes de modelos, vozes, idiomas, Ollama
+â”‚   â”œâ”€â”€ system_monitor.py     # Monitor GPU/CPU/RAM/disco
+â”‚   â””â”€â”€ stats_tracker.py      # Estatisticas e ETAs aprendidos
+â”‚
+â””â”€â”€ web/                      # Frontend Next.js
+    â”œâ”€â”€ next.config.ts        # Proxy reverso para /api â†’ :8000
+    â””â”€â”€ src/
+        â”œâ”€â”€ app/
+        â”‚   â”œâ”€â”€ layout.tsx        # Navbar + tema escuro
+        â”‚   â”œâ”€â”€ page.tsx          # Dashboard
+        â”‚   â”œâ”€â”€ nav-version.tsx   # Versao dinamica no navbar
+        â”‚   â”œâ”€â”€ new/page.tsx      # Formulario de dublagem
+        â”‚   â”œâ”€â”€ transcribe/page.tsx  # Formulario de transcricao
+        â”‚   â”œâ”€â”€ cut/page.tsx      # Formulario de corte
+        â”‚   â”œâ”€â”€ download/page.tsx # Formulario de download
+        â”‚   â””â”€â”€ jobs/
+        â”‚       â”œâ”€â”€ page.tsx      # Lista de jobs
+        â”‚       â””â”€â”€ [id]/page.tsx # Detalhe + progresso em tempo real
+        â””â”€â”€ lib/
+            â””â”€â”€ api.ts            # Funcoes de acesso a API
+```
+
+---
+
+## Funcoes da API Frontend (`web/src/lib/api.ts`)
+
+| Funcao | Descricao |
+|--------|-----------|
+| `createJob(config)` | Criar job de dublagem |
+| `createJobWithUpload(file, config, onProgress)` | Dublagem com upload |
+| `createDownloadJob(config)` | Criar job de download |
+| `createTranscriptionJob(config)` | Criar job de transcricao |
+| `createTranscriptionJobWithUpload(file, config, onProgress)` | Transcricao com upload |
+| `createCutJob(config)` | Criar job de corte |
+| `createCutJobWithUpload(file, config, onProgress)` | Corte com upload |
+| `listJobs()` | Listar todos os jobs |
+| `getJob(jobId)` | Buscar job por ID |
+| `getJobLogs(jobId, lastN)` | Buscar logs do job |
+| `cancelJob(jobId)` | Cancelar job |
+| `deleteJob(jobId)` | Excluir job e arquivos |
+| `retryJob(jobId)` | Re-tentar job falho |
+| `getDownloadUrl(jobId)` | URL do video dublado |
+| `getDownloadFileUrl(jobId)` | URL do video baixado |
+| `getSubtitlesUrl(jobId, lang)` | URL das legendas |
+| `getTranscriptUrl(jobId, format)` | URL da transcricao |
+| `getClips(jobId)` | Listar clips do job |
+| `getClipUrl(jobId, clipName)` | URL de clip individual |
+| `getClipsZipUrl(jobId)` | URL do ZIP de clips |
+| `getTranscriptSummary(jobId)` | Titulo e preview da transcricao |
+| `getVideoSummary(jobId)` | Titulo e resumo do video dublado |
+| `getSystemStatus()` | Status do sistema |
+| `getOptions()` | Opcoes de modelos |
+| `getOllamaStatus()` | Status do Ollama |
+| `startOllama()` | Iniciar Ollama |
+| `stopOllama()` | Parar Ollama |
+| `pullOllamaModel(model)` | Baixar modelo Ollama |
+| `createJobWebSocket(jobId)` | WebSocket de progresso |
+
+---
+
+## Motores de IA
+
+| Tipo | Motores | Detalhes |
+|------|---------|----------|
+| **TTS** | Edge TTS, Bark, XTTS, Piper | Ver [docs/dublar.md#motores-tts](docs/dublar.md#motores-tts) |
+| **ASR** | Whisper (tinyâ†’large-v3), Parakeet 1.1B | Ver [docs/transcrever.md#modelos-asr](docs/transcrever.md#modelos-asr) |
+| **Traducao** | M2M100 418M/1.2B, Ollama | Ver [docs/dublar.md#motores-de-traducao](docs/dublar.md#motores-de-traducao) |
+| **LLM (corte viral)** | Ollama, OpenAI, Anthropic, Groq, DeepSeek, OpenRouter | Ver [docs/cortar.md#providers-llm-modo-viral](docs/cortar.md#providers-llm-modo-viral) |
+
+---
+
+## Configuracao
+
+### Variaveis de Ambiente
+
+| Variavel | Padrao | Descricao |
+|----------|--------|-----------|
+| `JOBS_DIR` | `jobs/` | Diretorio para armazenar os jobs |
+| `DOCKER_GPU_IMAGE` | `dublar-pro:gpu` | Imagem Docker com GPU |
+| `OLLAMA_HOST` | `http://localhost:11434` | URL do servidor Ollama |
+| `NEXT_PUBLIC_API_URL` | `""` (relativo) | URL do backend para o frontend |
+
+### Docker â€” Flags obrigatorias
+
+```bash
+docker run \
+  --gpus all \
+  --ipc=host \
+  --ulimit memlock=-1 \
+  --ulimit stack=67108864 \
+  --network host \
+  dublar-pro:gpu
+```
+
+---
+
+## Troubleshooting
+
+### API offline no frontend
+
+```bash
+curl http://localhost:8000/api/health
+# Se falhar:
+uvicorn api.server:app --host 0.0.0.0 --port 8000
+```
+
+### GPU nao detectada no Docker
+
+```bash
+docker run --gpus all --entrypoint python dublar-pro:gpu \
+  -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+# Esperado: 2.6.0a0+...nv25.01 True
+```
+
+### Job preso em "queued"
+
+```bash
+# Verificar se ha um container Docker travado
+docker ps | grep dublarv5
+# Matar se necessario:
+docker kill dublarv5-{job_id}
+```
+
+### Ollama nao responde
+
+```bash
+curl http://localhost:11434/api/tags
+# Se falhar:
+ollama serve
+```
+
+### yt-dlp desatualizado (falha em novos sites)
+
+```bash
+pip install -U yt-dlp
+# Ou dentro do Docker:
+docker exec {container} pip install -U yt-dlp
+```
+
+---
+
+## Hardware Testado
+
+| Componente | Detalhes |
+|------------|----------|
+| GPU | NVIDIA GB10 Blackwell â€” CUDA 12.8, driver 580.95 |
+| CPU | ARM64 â€” 20 cores |
+| RAM | 119 GB |
+| OS | Ubuntu 24.04 LTS |
+| Base Image | `nvcr.io/nvidia/pytorch:25.01-py3` |
+
+---
+
+## Historico de Versoes
+
+| Versao | Descricao |
+|--------|-----------|
+| **5.3.1** | UX: filtros na lista de jobs, titulo/resumo automatico nos resultados, player de clips com timecodes; fixes de checkpoint e recuperacao de status apos hot-reload |
+| 5.3.0 | Feature Baixar: download de videos do YouTube e +1000 sites via yt-dlp |
+| 5.2.x | Features Cortar (clipar_v1.py) e Transcrever (transcrever_v1.py), modo viral com LLM |
+| 5.1.x | Interface web multi-modo, sistema de jobs com checkpoint e recuperacao |
+| 5.0.x | Pipeline v5 com suporte a Docker GPU Blackwell |
+
+---
+
+Projeto adaptado da comunidade INEMA TDS - Marca Arckhe
