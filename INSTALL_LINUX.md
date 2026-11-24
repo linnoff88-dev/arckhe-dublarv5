@@ -5,7 +5,7 @@ Este guia mostra como instalar e configurar o sistema Dublar em um servidor Linu
 ## ⚡ TL;DR - Início Rápido
 
 ```bash
-git clone https://github.com/inematds/dublar.git
+git clone https://github.com/linnoff88-dev/dublar.git
 cd dublar
 python3 -m venv venv
 source venv/bin/activate
@@ -22,7 +22,7 @@ python3 dublar.py video.mp4 --src_lang en --tgt_lang pt --tts bark --sync smart
 
 ```bash
 # Clone o repositório
-git clone https://github.com/inematds/dublar.git
+git clone https://github.com/linnoff88-dev/dublar.git
 cd dublar
 ```
 

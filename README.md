@@ -1,4 +1,4 @@
-﻿# Dublar Pro v5
+# Dublar Pro v5
 
 Pipeline completo de processamento de video com IA. Baixa, transcreve, traduz, dubla e corta videos usando modelos locais e na nuvem. Interface web com monitor em tempo real e suporte a GPU via Docker.
 
@@ -499,4 +499,4 @@ docker exec {container} pip install -U yt-dlp
 
 ---
 
-Projeto adaptado da comunidade INEMA TDS - Marca Arckhe
+Projeto adaptado da comunidade ARCKHÉ TDS - Marca Arckhe
