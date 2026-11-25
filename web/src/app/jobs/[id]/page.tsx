@@ -131,7 +131,7 @@ export default function JobDetail() {
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Excluir job ${jobId} e todos os arquivos? Esta ação não pode ser desfeita.`)) return;
+    if (!confirm(`Excluir job ${jobId} e todos os arquivos? Esta açêo nêo pode ser desfeita.`)) return;
     setDeleting(true);
     try {
       await deleteJob(jobId);

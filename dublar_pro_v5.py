@@ -1210,7 +1210,7 @@ def _clean_ollama_response(response, original_text):
         if pattern.lower() in text.lower():
             return None
 
-    # Se a resposta é igual ao texto original (não traduziu), retorna None
+    # Se a resposta é igual ao texto original (nêo traduziu), retorna None
     if text.strip() == original_text.strip():
         return None
 
@@ -1218,10 +1218,10 @@ def _clean_ollama_response(response, original_text):
     garbage_patterns = [
         "REGRAS CRÍTICAS:",
         "CRITICAL RULES:",
-        "Tradução concisa (máximo",
+        "Traduçêo concisa (máximo",
         "Concise translation (max",
         "Translation:",
-        "Tradução:",
+        "Traduçêo:",
         "(Note:",
         "Note:",
         "Nota:",
@@ -1235,7 +1235,7 @@ def _clean_ollama_response(response, original_text):
         "- Remove filler",
         "- Manter termos",
         "- Keep technical",
-        "- NÃO adicione",
+        "- NêO adicione",
         "- Do NOT add",
         "- Se tiver dúvida",
         "- If in doubt",
@@ -1243,7 +1243,7 @@ def _clean_ollama_response(response, original_text):
         "Text (",
     ]
 
-    # Se contém qualquer padrão de lixo, tentar extrair só a tradução
+    # Se contém qualquer padrêo de lixo, tentar extrair só a traduçêo
     has_garbage = any(p in text for p in garbage_patterns)
 
     if has_garbage:
@@ -1257,16 +1257,16 @@ def _clean_ollama_response(response, original_text):
             # Ignorar linhas que começam com "-" (instruções)
             if line.startswith('-'):
                 continue
-            # Ignorar linhas que são claramente instruções
+            # Ignorar linhas que sêo claramente instruções
             if any(p in line for p in garbage_patterns):
                 continue
-            # Esta linha pode ser a tradução
+            # Esta linha pode ser a traduçêo
             # Remover prefixos comuns
             if ':' in line:
                 parts = line.split(':', 1)
                 if len(parts) > 1 and len(parts[1].strip()) > 5:
                     candidate = parts[1].strip()
-                    # Verificar se não é instrução
+                    # Verificar se nêo é instruçêo
                     if not any(p in candidate for p in garbage_patterns):
                         text = candidate
                         break
@@ -1285,12 +1285,12 @@ def _clean_ollama_response(response, original_text):
         if sep in text:
             text = text.split(sep)[0].strip()
 
-    # Se ainda tem múltiplas linhas, pegar a última que parece tradução válida
+    # Se ainda tem múltiplas linhas, pegar a última que parece traduçêo válida
     if '\n' in text:
         lines = [l.strip() for l in text.split('\n') if l.strip()]
         valid_lines = []
         for line in lines:
-            # Ignorar linhas de instrução
+            # Ignorar linhas de instruçêo
             if line.startswith('-'):
                 continue
             if any(p in line for p in garbage_patterns):
@@ -1299,10 +1299,10 @@ def _clean_ollama_response(response, original_text):
                 valid_lines.append(line)
 
         if valid_lines:
-            # Pegar a última linha válida (geralmente é a tradução)
+            # Pegar a última linha válida (geralmente é a traduçêo)
             text = valid_lines[-1]
 
-    # Validação final: se ainda contém lixo óbvio, retorna None
+    # Validaçêo final: se ainda contém lixo óbvio, retorna None
     final_garbage = ["REGRAS", "CRITICAL", "chars)", "caracteres)", "DUBBING"]
     if any(g in text for g in final_garbage):
         return None
